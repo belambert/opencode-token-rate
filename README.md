@@ -16,17 +16,15 @@ The Speed and Price sections appear below OpenCode's built-in Context section:
 
 ## Install
 
-Add the package to `plugins` in `~/.config/opencode/opencode.json`:
+    opencode plugin add opencode-trip-meter
+
+Or add the package to `plugins` in `~/.config/opencode/opencode.json`:
 
 ```json
 {
   "plugins": ["opencode-trip-meter"]
 }
 ```
-
-Or install it from the command line:
-
-    opencode plugin add opencode-trip-meter
 
 ## Options
 
