@@ -1,5 +1,7 @@
 # opencode-trip-meter
 
+[![npm](https://img.shields.io/npm/v/opencode-trip-meter)](https://www.npmjs.com/package/opencode-trip-meter)
+
 A trip meter for your OpenCode sessions: how fast the model is going and what the trip has cost so
 far.
 
