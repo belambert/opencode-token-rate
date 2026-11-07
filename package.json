@@ -1,15 +1,15 @@
 {
-  "name": "opencode-token-rate",
+  "name": "opencode-trip-meter",
   "version": "0.1.0",
   "description": "OpenCode v2 sidebar plugin showing tokens/sec and the current model's per-token prices.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/belambert/opencode-token-rate.git"
+    "url": "git+https://github.com/belambert/opencode-trip-meter.git"
   },
-  "homepage": "https://github.com/belambert/opencode-token-rate#readme",
-  "bugs": "https://github.com/belambert/opencode-token-rate/issues",
+  "homepage": "https://github.com/belambert/opencode-trip-meter#readme",
+  "bugs": "https://github.com/belambert/opencode-trip-meter/issues",
   "keywords": [
     "opencode",
     "opencode-plugin",
