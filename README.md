@@ -1,4 +1,7 @@
-# opencode-token-rate
+# opencode-trip-meter
+
+A trip meter for your OpenCode sessions: how fast the model is going and what the trip has cost so
+far.
 
 An [OpenCode](https://opencode.ai) v2 plugin that adds two sections to the session sidebar:
 
@@ -17,13 +20,13 @@ Add the package to `plugins` in `~/.config/opencode/opencode.json`:
 
 ```json
 {
-  "plugins": ["opencode-token-rate"]
+  "plugins": ["opencode-trip-meter"]
 }
 ```
 
 Or install it from the command line:
 
-    opencode plugin add opencode-token-rate
+    opencode plugin add opencode-trip-meter
 
 ## Options
 
@@ -31,7 +34,7 @@ Use the object form to change the trailing windows, in minutes:
 
 ```json
 {
-  "plugins": [{ "package": "opencode-token-rate", "options": { "windows": [1, 15, 60] } }]
+  "plugins": [{ "package": "opencode-trip-meter", "options": { "windows": [1, 15, 60] } }]
 }
 ```
 
@@ -79,7 +82,7 @@ To try a local checkout, build it and symlink it into a project's plugin directo
 
     bun run build
     mkdir -p <project>/.opencode/plugins
-    ln -s "$PWD" <project>/.opencode/plugins/opencode-token-rate
+    ln -s "$PWD" <project>/.opencode/plugins/opencode-trip-meter
 
 ## Layout
 
