@@ -43,15 +43,7 @@ Use the object form to change the trailing windows, in minutes:
 ## How It Works
 
 Speed counts output and reasoning tokens per assistant step, timed from the first streamed part to
-the end of the model stream. Tool execution and time to first token are excluded. Averages are
-weighted by tokens, so long steps count more than short ones. A window shows `—` when no step
-finished inside it. The session average covers up to the latest 1,000 steps, backfilled from the
-API.
-
-Stored messages don't timestamp text parts. For steps that stream while the TUI is open, the plugin
-records the first-token time from live events. For older text-only steps (no reasoning or tool
-calls), timing starts at message creation, which includes time to first token and reads slightly
-low.
+the end of the model stream, so tool execution and time to first token are excluded.
 
 Prices come from the model catalog for the model selected in the prompt, using the base tier
 (context-size tiers are ignored). Models with no pricing, such as local ones, show `no pricing`.
