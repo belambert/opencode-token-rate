@@ -2,7 +2,21 @@ import type { SessionMessageInfo } from "@opencode/client"
 import type { Plugin } from "@opencode/plugin/tui"
 import { createEffect, createMemo, createSignal, For, on, onCleanup, Show } from "solid-js"
 import { ID } from "./id"
-import { findModel, fmtPrice, fmtRate, price, samples, speeds } from "./stats"
+import type { RGBA } from "@opentui/core"
+import {
+  findModel,
+  fmtPrice,
+  fmtRate,
+  fmtUSD,
+  matches,
+  price,
+  samples,
+  speeds,
+  spend,
+  total,
+  unique,
+  type Price,
+} from "./stats"
 
 const DEFAULT_WINDOWS = [5, 60]
 // enough history for a long session without paging forever
@@ -60,31 +74,36 @@ function Sidebar(props: {
     ),
   )
 
-  const list = createMemo(() =>
-    samples([...history(), ...ctx.data.session.message.list(props.sessionID)], props.firsts),
+  const msgs = createMemo(() =>
+    unique([...history(), ...ctx.data.session.message.list(props.sessionID)]),
   )
+  const list = createMemo(() => samples(msgs(), props.firsts))
   const rows = createMemo(() => speeds(list(), props.minutes, now()))
 
+  const session = () => ctx.data.session.get(props.sessionID)
+  const models = () => ctx.data.location.model.list(session()?.location)
   const model = createMemo(() => {
-    const session = ctx.data.session.get(props.sessionID)
     const sel = ctx.ui.model.current()
-    const ref = sel ? { providerID: sel.providerID, id: sel.modelID } : session?.model
-    return ref && findModel(ctx.data.location.model.list(session?.location), ref)
+    const ref = sel ? { providerID: sel.providerID, id: sel.modelID } : session()?.model
+    return ref && findModel(models(), ref)
   })
   const cost = createMemo(() => {
     const m = model()
-    return m && price(m)
+    return (m && price(m)) ?? { input: 0, cached: 0, write: 0, output: 0 }
   })
-  const free = () => {
-    const c = cost()
-    return !c || c.input + c.cached + c.write + c.output === 0
-  }
+  const spent = createMemo(() => spend(msgs(), models()))
+  const priced = () => total(cost()) > 0 || total(spent()) > 0
 
-  const Row = (p: { label: string; value: string }) => (
+  const Row = (p: { label: string; value: string; fg?: RGBA }) => (
     <box flexDirection="row" justifyContent="space-between">
       <text fg={theme.text.muted}>{p.label}</text>
-      <text fg={theme.text.base}>{p.value}</text>
+      <text fg={p.fg ?? theme.text.base}>{p.value}</text>
     </box>
+  )
+  // monospace columns: rate, then spend
+  const cols = (rate: string, usd: string) => `${rate.padStart(9)}  ${usd.padStart(7)}`
+  const Cost = (p: { label: string; key: keyof Price }) => (
+    <Row label={p.label} value={cols(fmtPrice(cost()[p.key]), fmtUSD(spent()[p.key]))} />
   )
 
   return (
@@ -103,14 +122,22 @@ function Sidebar(props: {
             <text fg={theme.text.base}>
               <b>Price</b>
             </text>
-            <text fg={theme.text.faint}>{m().name}</text>
-            <Show when={!free()} fallback={<text fg={theme.text.muted}>no pricing</text>}>
-              <Row label="input" value={fmtPrice(cost()!.input)} />
-              <Row label="cached" value={fmtPrice(cost()!.cached)} />
-              <Show when={cost()!.write > 0}>
-                <Row label="cache write" value={fmtPrice(cost()!.write)} />
+            <Show when={priced()} fallback={<text fg={theme.text.faint}>{m().name}</text>}>
+              <Row label={m().name} value={cols("rate", "spent")} fg={theme.text.faint} />
+            </Show>
+            <Show when={priced()} fallback={<text fg={theme.text.muted}>no pricing</text>}>
+              <Cost label="input" key="input" />
+              <Cost label="cached" key="cached" />
+              <Show when={cost().write > 0 || spent().write > 0}>
+                <Cost label="write" key="write" />
               </Show>
-              <Row label="output" value={fmtPrice(cost()!.output)} />
+              <Cost label="output" key="output" />
+              <Row label="total" value={cols("", fmtUSD(total(spent())))} />
+              <Show when={!matches(spent())}>
+                <text fg={theme.text.feedback.warning.base}>
+                  {`billed ${fmtUSD(spent().billed)}; breakdown is approximate`}
+                </text>
+              </Show>
             </Show>
           </box>
         )}

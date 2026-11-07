@@ -8,6 +8,9 @@ export type Speed = { label: string; tps?: number }
 /** Per-million-token prices in USD. */
 export type Price = { input: number; cached: number; write: number; output: number }
 
+/** USD spent per category, plus the host-recorded total. */
+export type Spend = Price & { billed: number }
+
 export type ModelRef = { providerID: string; id: string }
 
 // shorter steps yield noisy, inflated rates
@@ -34,18 +37,53 @@ export function rate(list: Sample[], since = -Infinity): number | undefined {
   return ms > 0 ? (tokens / ms) * 1000 : undefined
 }
 
-/** Samples deduplicated by message id, oldest first; `firsts` maps ids to live first-token times. */
+/** Deduplicates messages by id; later entries win. */
+export const unique = (msgs: readonly SessionMessageInfo[]) => [
+  ...new Map(msgs.map((m) => [m.id, m])).values(),
+]
+
+/** Samples oldest first; `firsts` maps message ids to live first-token times. */
 export function samples(
   msgs: readonly SessionMessageInfo[],
   firsts?: ReadonlyMap<string, number>,
 ): Sample[] {
-  const byID = new Map<string, Sample>()
-  for (const msg of msgs) {
-    const s = sample(msg, firsts?.get(msg.id))
-    if (s) byID.set(s.id, s)
-  }
-  return [...byID.values()].sort((a, b) => a.end - b.end)
+  return msgs.flatMap((msg) => sample(msg, firsts?.get(msg.id)) ?? []).sort((a, b) => a.end - b.end)
 }
+
+/**
+ * USD spent per token category, pricing each message at its own model's base tier.
+ *
+ * `input` excludes cache reads, and reasoning bills as output. `billed` sums the host's recorded
+ * message costs, so a mismatch reveals tiered pricing or models missing from the catalog.
+ */
+export function spend(
+  msgs: readonly SessionMessageInfo[],
+  models: readonly ModelInfo[] | undefined,
+): Spend {
+  const s = { input: 0, cached: 0, write: 0, output: 0, billed: 0 }
+  for (const msg of msgs) {
+    if (msg.type !== "assistant" || !msg.tokens) continue
+    s.billed += msg.cost ?? 0
+
+    const model = findModel(models, msg.model)
+    const p = model && price(model)
+    if (!p) continue
+    const t = msg.tokens
+    s.input += (t.input * p.input) / 1e6
+    s.cached += (t.cache.read * p.cached) / 1e6
+    s.write += (t.cache.write * p.write) / 1e6
+    s.output += ((t.output + t.reasoning) * p.output) / 1e6
+  }
+  return s
+}
+
+export const total = (p: Price) => p.input + p.cached + p.write + p.output
+
+// tolerate float drift and sub-cent rounding in recorded costs
+const MATCH_TOLERANCE = 0.02
+
+export const matches = (s: Spend) =>
+  s.billed === 0 || Math.abs(total(s) - s.billed) <= s.billed * MATCH_TOLERANCE
 
 /**
  * Times generation from the first streamed part to the end of the stream.
@@ -89,5 +127,9 @@ const usd = new Intl.NumberFormat("en-US", {
 })
 
 export const fmtPrice = (n: number) => `${usd.format(n)}/M`
+
+const cents = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
+
+export const fmtUSD = (n: number) => (n > 0 && n < 0.01 ? "<$0.01" : cents.format(n))
 
 const span = (m: number) => (m % 60 === 0 ? `${m / 60}h` : `${m}m`)

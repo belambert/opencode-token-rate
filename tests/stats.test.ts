@@ -1,6 +1,20 @@
 import type { ModelInfo, SessionMessageInfo } from "@opencode/client"
 import { describe, expect, test } from "bun:test"
-import { findModel, fmtPrice, fmtRate, price, rate, sample, samples, speeds } from "../src/stats"
+import {
+  findModel,
+  fmtPrice,
+  fmtRate,
+  fmtUSD,
+  matches,
+  price,
+  rate,
+  sample,
+  samples,
+  speeds,
+  spend,
+  total,
+  unique,
+} from "../src/stats"
 
 // a step whose first timed part starts at `start` and whose stream ends at `end`, followed by tool time
 const msg = (id: string, start: number, end: number, output: number, reasoning = 0) =>
@@ -51,10 +65,16 @@ describe("sample", () => {
 })
 
 describe("samples", () => {
-  test("dedupes by id and sorts oldest first", () => {
+  test("sorts oldest first", () => {
     const a = msg("a", 5000, 6000, 10)
     const b = msg("b", 1000, 2000, 10)
-    expect(samples([a, b, a]).map((s) => s.id)).toEqual(["b", "a"])
+    expect(samples([a, b]).map((s) => s.id)).toEqual(["b", "a"])
+  })
+
+  test("unique keeps the last copy of each message", () => {
+    const old = msg("a", 0, 1000, 10)
+    const fresh = msg("a", 0, 1000, 20)
+    expect(unique([old, msg("b", 0, 1000, 5), fresh])).toEqual([fresh, msg("b", 0, 1000, 5)])
   })
 })
 
@@ -93,6 +113,32 @@ describe("pricing", () => {
   })
 })
 
+describe("spend", () => {
+  const priced = (id: string, tokens: object, cost: number, ref = { id: "m", providerID: "p" }) =>
+    ({ id, type: "assistant", model: ref, tokens, cost }) as unknown as SessionMessageInfo
+  const models = [model([tier(2, 10, 0.5, 4)])]
+  const tokens = { input: 1e6, output: 1e5, reasoning: 1e5, cache: { read: 2e6, write: 5e5 } }
+
+  test("prices each category, billing reasoning as output", () => {
+    const s = spend([priced("a", tokens, 7)], models)
+    expect(s).toEqual({ input: 2, cached: 1, write: 2, output: 2, billed: 7 })
+    expect(total(s)).toBe(7)
+    expect(matches(s)).toBe(true)
+  })
+
+  test("flags messages whose model is missing from the catalog", () => {
+    const ref = { id: "gone", providerID: "p" }
+    const s = spend([priced("a", tokens, 7), priced("b", tokens, 3, ref)], models)
+    expect(s.billed).toBe(10)
+    expect(matches(s)).toBe(false)
+  })
+
+  test("ignores non-assistant messages", () => {
+    const user = { id: "u", type: "user" } as unknown as SessionMessageInfo
+    expect(spend([user], models).billed).toBe(0)
+  })
+})
+
 describe("format", () => {
   test("rates", () => {
     expect(fmtRate(undefined)).toBe("—")
@@ -103,5 +149,11 @@ describe("format", () => {
   test("prices", () => {
     expect(fmtPrice(3)).toBe("$3.00/M")
     expect(fmtPrice(0.075)).toBe("$0.075/M")
+  })
+
+  test("dollars", () => {
+    expect(fmtUSD(0)).toBe("$0.00")
+    expect(fmtUSD(0.004)).toBe("<$0.01")
+    expect(fmtUSD(1.239)).toBe("$1.24")
   })
 })

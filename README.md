@@ -5,7 +5,7 @@ An [OpenCode](https://opencode.ai) v2 plugin that adds two sections to the sessi
 - **Speed**: output tokens per second for the last step, trailing time windows (5m and 1h by
   default), and the whole session.
 - **Price**: the selected model's price per million tokens for input, cached input, cache writes
-  (when billed), and output.
+  (when billed), and output, next to what the session has spent in each category.
 
 ```text
 Speed
@@ -15,10 +15,11 @@ last                        114 tok/s
 session                     117 tok/s
 
 Price
-GLM 5.3
-input                         $1.40/M
-cached                        $0.26/M
-output                        $4.40/M
+GLM 5.3                 rate    spent
+input                $1.40/M    $0.11
+cached               $0.26/M    $0.41
+output               $4.40/M    $0.18
+total                           $0.69
 ```
 
 ## Install
@@ -64,6 +65,13 @@ low.
 
 Prices come from the model catalog for the model selected in the prompt, using the base tier
 (context-size tiers are ignored). Models with no pricing, such as local ones, show `no pricing`.
+
+Spend prices each message's tokens at the base tier of the model that produced it, so switching
+models mid-session stays accurate. Reasoning tokens bill as output. The total is checked against
+the costs OpenCode recorded for those messages; if they differ by more than 2% (tiered pricing, or a
+model missing from the catalog), a warning shows the billed amount and marks the breakdown as
+approximate. Spend covers this session's assistant messages only, not sub-agent sessions, so it
+can read slightly below the built-in Context total.
 
 ## Development
 
