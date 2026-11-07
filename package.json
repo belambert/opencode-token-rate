@@ -4,6 +4,12 @@
   "description": "OpenCode v2 sidebar plugin showing tokens/sec and the current model's per-token prices.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/belambert/opencode-token-rate.git"
+  },
+  "homepage": "https://github.com/belambert/opencode-token-rate#readme",
+  "bugs": "https://github.com/belambert/opencode-token-rate/issues",
   "keywords": [
     "opencode",
     "opencode-plugin",
