@@ -33,6 +33,10 @@
     "lint": "prettier --check . && tsc --noEmit",
     "prepack": "bun run build"
   },
+  "prettier": {
+    "semi": false,
+    "printWidth": 100
+  },
   "peerDependencies": {
     "@opentui/solid": ">=0.8.1",
     "solid-js": ">=1.9.0"
