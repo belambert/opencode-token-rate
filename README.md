@@ -7,20 +7,9 @@ An [OpenCode](https://opencode.ai) v2 plugin that adds two sections to the sessi
 - **Price**: the selected model's price per million tokens for input, cached input, cache writes
   (when billed), and output, next to what the session has spent in each category.
 
-```text
-Speed
-last                        114 tok/s
-5m                           98 tok/s
-1h                          117 tok/s
-session                     117 tok/s
+The Speed and Price sections appear below OpenCode's built-in Context section:
 
-Price
-GLM 5.3                 rate    spent
-input                $1.40/M    $0.11
-cached               $0.26/M    $0.41
-output               $4.40/M    $0.18
-total                           $0.69
-```
+<img src="docs/sidebar.png" alt="OpenCode sidebar showing Context, Speed, and Price sections" width="384">
 
 ## Install
 
