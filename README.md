@@ -82,6 +82,12 @@ To try a local checkout, build it and symlink it into a project's plugin directo
     mkdir -p <project>/.opencode/plugins
     ln -s "$PWD" <project>/.opencode/plugins/opencode-trip-meter
 
+## Releasing
+
+Bump `version` in `package.json`, merge it, then publish a GitHub release tagged `v<version>`
+(e.g. `v0.2.0`). The `publish` workflow checks the tag matches, runs lint and tests, and publishes
+to npm via trusted publishing, so no npm token is needed.
+
 ## Layout
 
 ```text
